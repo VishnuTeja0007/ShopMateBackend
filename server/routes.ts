@@ -24,6 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication Routes
   app.post("/api/auth/register", validateBody(insertUserSchema), async (req, res) => {
     try {
+      console.log("Registering user", req.body);
       const result = await AuthService.register(req.body);
       res.status(201).json(result);
     } catch (error: any) {
@@ -49,7 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       res.json({
-        userId: user.id,
+        userId: user._id.toString(),
         email: user.email,
         preferences: user.preferences,
       });

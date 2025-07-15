@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // User Schema
 export const userSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   email: z.string().email(),
   passwordHash: z.string(),
   preferences: z.object({
@@ -22,7 +22,7 @@ export const insertUserSchema = z.object({
 
 // Product Schema
 export const productSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
   imageUrl: z.string(),
@@ -54,14 +54,14 @@ export const productSchema = z.object({
 });
 
 export const insertProductSchema = productSchema.omit({ 
-  id: true, 
+  _id: true, 
   createdAt: true, 
   updatedAt: true 
 });
 
 // Wishlist Schema
 export const wishlistSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   userId: z.string(),
   productId: z.string(),
   addedAt: z.date(),
@@ -69,13 +69,13 @@ export const wishlistSchema = z.object({
 });
 
 export const insertWishlistSchema = wishlistSchema.omit({ 
-  id: true, 
+  _id: true, 
   addedAt: true 
 });
 
 // Order Schema
 export const orderSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   userId: z.string(),
   orderId: z.string(),
   productName: z.string(),
@@ -89,7 +89,7 @@ export const orderSchema = z.object({
 });
 
 export const insertOrderSchema = orderSchema.omit({ 
-  id: true, 
+  _id: true, 
   createdAt: true, 
   updatedAt: true, 
   lastStatusCheckAt: true 
@@ -97,7 +97,7 @@ export const insertOrderSchema = orderSchema.omit({
 
 // Search History Schema
 export const searchHistorySchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   query: z.string(),
   timestamp: z.date(),
   userId: z.string().nullable(),
@@ -106,12 +106,12 @@ export const searchHistorySchema = z.object({
 });
 
 export const insertSearchHistorySchema = searchHistorySchema.omit({ 
-  id: true 
+  _id: true 
 });
 
 // Daily Deals Schema
 export const dailyDealsSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   name: z.string(),
   imageUrl: z.string(),
   originalPrice: z.number(),
@@ -125,7 +125,7 @@ export const dailyDealsSchema = z.object({
 });
 
 export const insertDailyDealsSchema = dailyDealsSchema.omit({ 
-  id: true, 
+  _id: true, 
   createdAt: true, 
   updatedAt: true 
 });

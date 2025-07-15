@@ -3,7 +3,11 @@ import { storage } from "../storage";
 import { InsertProduct, ProductSearchRequest } from "@shared/schema";
 import { Logger } from "../utils/logger";
 
-const SERP_API_KEY = process.env.SERP_API_KEY || "default_serp_key";
+// Load SERP API key from environment variable
+const SERP_API_KEY = process.env.SERP_API_KEY;
+if (!SERP_API_KEY) {
+  throw new Error("SERP_API_KEY is not set in the environment variables. Please add it to your .env file.");
+}
 const SERP_API_URL = "https://serpapi.com/search";
 
 export class ProductSearchService {

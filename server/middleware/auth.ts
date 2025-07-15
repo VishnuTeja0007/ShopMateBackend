@@ -54,7 +54,9 @@ export function optionalAuth(req: AuthRequest, res: Response, next: NextFunction
           req.user = user;
         }
       } catch (error) {
-        // Continue without authentication
+        // Log the error for debugging
+        console.error("Error fetching user during JWT authentication:", error);
+        // Optionally, you could clear req.userId and req.user here if needed
       }
     }
     next();
