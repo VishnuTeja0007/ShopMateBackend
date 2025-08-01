@@ -53,11 +53,11 @@ const platformSchema = new Schema<IPlatform>({
   },
   logoUrl: {
     type: String,
-    required: true,
+    required: false,
   },
   productUrl: {
     type: String,
-    required: true,
+    required: false,
   },
   currentPrice: {
     type: Number,

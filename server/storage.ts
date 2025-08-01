@@ -82,6 +82,7 @@ export class MongoStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<IUser> {
     const user = new User({
+      name: insertUser.name, // Add this line to include the name field
       email: insertUser.email.toLowerCase(),
       passwordHash: insertUser.password, // This should be hashed in auth service
       preferences: insertUser.preferences || { theme: "light" },

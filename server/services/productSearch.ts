@@ -8,7 +8,7 @@ const SERP_API_KEY = process.env.SERP_API_KEY;
 if (!SERP_API_KEY) {
   throw new Error("SERP_API_KEY is not set in the environment variables. Please add it to your .env file.");
 }
-const SERP_API_URL = "https://serpapi.com/search";
+const SERP_API_URL = "https://serpapi.com/search.json";
 
 export class ProductSearchService {
   static async searchProducts(searchParams: ProductSearchRequest) {
@@ -38,6 +38,7 @@ export class ProductSearchService {
       
       // Format and return results
       return this.formatSearchResults(products, searchParams);
+      Logger.info(`Search successfull Products: ${JSON.stringify(products)}`) ;
     } catch (error) {
       Logger.error("Product search failed", error);
       throw error;

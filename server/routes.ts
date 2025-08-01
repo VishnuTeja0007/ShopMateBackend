@@ -37,6 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = await AuthService.login(req.body);
       res.json(result);
+      console.log(res.json)
     } catch (error: any) {
       Logger.error("Login failed", error);
       res.status(401).json({ message: error.message });
