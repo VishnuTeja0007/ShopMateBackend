@@ -24,29 +24,32 @@ export const insertUserSchema = z.object({
 // Product Schema
 export const productSchema = z.object({
   _id: z.string(),
-  name: z.string(),
+  title: z.string(),
   description: z.string().nullable(),
   imageUrl: z.string(),
-  category: z.string().nullable(),
   brand: z.string().nullable(),
-  productStars: z.number().nullable(),
-  reviewsCount: z.number().nullable(),
-  keyFeatures: z.array(z.string()).default([]),
-  specifications: z.record(z.string()).default({}),
-  searchKeywords: z.array(z.string()).default([]),
+  rating: z.number().nullable(),
+  bestValueStore: z.string().nullable(),
+  features: z.array(z.string()).default([]),
   platforms: z.array(z.object({
     name: z.string(),
-    logoUrl: z.string(),
+    logoUrl: z.string().nullable(),
     productUrl: z.string(),
     currentPrice: z.number(),
-    discount: z.number().default(0),
+    originalPrice: z.number().nullable(),
+    discount: z.number().nullable(),
     inclusivePrice: z.number(),
-    deliveryDate: z.date().nullable(),
-    sellerRating: z.number().nullable(),
+    rating: z.number().nullable(),
+    deliveryInfo: z.object({
+      status: z.enum(['free', 'paid']),
+      cost: z.number().nullable(),
+      time: z.string().nullable(),
+    }).nullable(),
     priceHistory: z.array(z.object({
       date: z.date(),
       price: z.number(),
     })).default([]),
+    lastUpdated: z.date(),
   })).default([]),
   lastScrapedAt: z.date(),
   lastPriceChangeAt: z.date(),
@@ -96,19 +99,7 @@ export const insertOrderSchema = orderSchema.omit({
   lastStatusCheckAt: true 
 });
 
-// Search History Schema
-export const searchHistorySchema = z.object({
-  _id: z.string(),
-  query: z.string(),
-  timestamp: z.date(),
-  userId: z.string().nullable(),
-  sessionId: z.string().nullable(),
-  productId: z.string().nullable(),
-});
 
-export const insertSearchHistorySchema = searchHistorySchema.omit({ 
-  _id: true 
-});
 
 // Daily Deals Schema
 export const dailyDealsSchema = z.object({
@@ -160,8 +151,7 @@ export type Wishlist = z.infer<typeof wishlistSchema>;
 export type InsertWishlist = z.infer<typeof insertWishlistSchema>;
 export type Order = z.infer<typeof orderSchema>;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
-export type SearchHistory = z.infer<typeof searchHistorySchema>;
-export type InsertSearchHistory = z.infer<typeof insertSearchHistorySchema>;
+
 export type DailyDeals = z.infer<typeof dailyDealsSchema>;
 export type InsertDailyDeals = z.infer<typeof insertDailyDealsSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;

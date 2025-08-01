@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { authenticateToken, optionalAuth, AuthRequest } from "./middleware/auth";
 import { validateBody, validateQuery } from "./middleware/validation";
@@ -14,7 +14,7 @@ import { AuthService } from "./services/auth";
 import { ProductSearchService } from "./services/productSearch";
 import { WishlistService } from "./services/wishlist";
 import { OrderTrackingService } from "./services/orderTracking";
-import { SearchHistoryService } from "./services/searchHistory";
+
 import { DailyDealsService } from "./services/dailyDeals";
 import { storage } from "./storage";
 import { Logger } from "./utils/logger";
@@ -75,6 +75,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products/search", validateQuery(productSearchRequestSchema), async (req, res) => {
     try {
       const results = await ProductSearchService.searchProducts(req.query as any);
+      
+      // Store search results in session
+      req.session.searchResults = results;
+      
       res.json(results);
     } catch (error: any) {
       Logger.error("Product search failed", error);
@@ -84,15 +88,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/products/:id", async (req, res) => {
     try {
-      const product = await ProductSearchService.getProductDetails(req.params.id);
+      // Get product details from session
+      if (!req.session.searchResults) {
+        return res.status(404).json({ message: "No search results found in session" });
+      }
+
+      const product = req.session.searchResults.find((p: any) => p.id === req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+
       res.json(product);
     } catch (error: any) {
       Logger.error("Failed to get product details", error);
-      if (error.message === "Product not found") {
-        res.status(404).json({ message: error.message });
-      } else {
-        res.status(500).json({ message: "Internal server error" });
-      }
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -185,40 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Search History Routes
-  app.post("/api/search/history", optionalAuth, async (req: AuthRequest, res) => {
-    try {
-      const { query, productId } = req.body;
-      const sessionId = req.cookies?.sessionId;
-      
-      const result = await SearchHistoryService.recordSearch(
-        query, 
-        req.userId, 
-        sessionId, 
-        productId
-      );
-      
-      if (result.sessionId) {
-        res.cookie('sessionId', result.sessionId, { maxAge: 30 * 24 * 60 * 60 * 1000 }); // 30 days
-      }
-      
-      res.json(result);
-    } catch (error: any) {
-      Logger.error("Failed to record search", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
 
-  app.get("/api/search/history", optionalAuth, async (req: AuthRequest, res) => {
-    try {
-      const sessionId = req.cookies?.sessionId;
-      const history = await SearchHistoryService.getSearchHistory(req.userId, sessionId);
-      res.json(history);
-    } catch (error: any) {
-      Logger.error("Failed to get search history", error);
-      res.status(500).json({ message: "Internal server error" });
-    }
-  });
 
   // Daily Deals Routes
   app.get("/api/deals", async (req, res) => {

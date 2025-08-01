@@ -5,29 +5,34 @@ export interface IPriceHistory {
   price: number;
 }
 
+export interface IDeliveryInfo {
+  status: 'free' | 'paid';
+  cost?: number;
+  time?: string; // e.g., "2-3 days", "Next day"
+}
+
 export interface IPlatform {
   name: string;
-  logoUrl: string;
+  logoUrl?: string;
   productUrl: string;
   currentPrice: number;
-  discount: number;
+  originalPrice?: number;
+  discount?: number;
   inclusivePrice: number;
-  deliveryDate?: Date;
-  sellerRating?: number;
+  rating?: number; // Store-specific rating
+  deliveryInfo?: IDeliveryInfo;
   priceHistory: IPriceHistory[];
+  lastUpdated: Date;
 }
 
 export interface IProduct extends Document {
-  name: string;
+  title: string; // Changed from 'name' to 'title'
   description?: string;
   imageUrl: string;
-  category?: string;
   brand?: string;
-  productStars?: number;
-  reviewsCount?: number;
-  keyFeatures: string[];
-  specifications: Record<string, string>;
-  searchKeywords: string[];
+  rating?: number; // Overall product rating
+  bestValueStore?: string; // Store with lowest price
+  features: string[]; // Product features/specifications
   platforms: IPlatform[];
   lastScrapedAt: Date;
   lastPriceChangeAt: Date;
@@ -46,6 +51,20 @@ const priceHistorySchema = new Schema<IPriceHistory>({
   },
 });
 
+const deliveryInfoSchema = new Schema<IDeliveryInfo>({
+  status: {
+    type: String,
+    enum: ['free', 'paid'],
+    required: true,
+  },
+  cost: {
+    type: Number,
+  },
+  time: {
+    type: String,
+  },
+});
+
 const platformSchema = new Schema<IPlatform>({
   name: {
     type: String,
@@ -53,15 +72,17 @@ const platformSchema = new Schema<IPlatform>({
   },
   logoUrl: {
     type: String,
-    required: false,
   },
   productUrl: {
     type: String,
-    required: false,
+    required: true,
   },
   currentPrice: {
     type: Number,
     required: true,
+  },
+  originalPrice: {
+    type: Number,
   },
   discount: {
     type: Number,
@@ -71,20 +92,26 @@ const platformSchema = new Schema<IPlatform>({
     type: Number,
     required: true,
   },
-  deliveryDate: {
-    type: Date,
-  },
-  sellerRating: {
+  rating: {
     type: Number,
+    min: 0,
+    max: 5,
+  },
+  deliveryInfo: {
+    type: deliveryInfoSchema,
   },
   priceHistory: {
     type: [priceHistorySchema],
     default: [],
   },
+  lastUpdated: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const productSchema = new Schema<IProduct>({
-  name: {
+  title: {
     type: String,
     required: true,
     trim: true,
@@ -97,33 +124,20 @@ const productSchema = new Schema<IProduct>({
     type: String,
     required: true,
   },
-  category: {
-    type: String,
-    trim: true,
-  },
   brand: {
     type: String,
     trim: true,
   },
-  productStars: {
+  rating: {
     type: Number,
     min: 0,
     max: 5,
   },
-  reviewsCount: {
-    type: Number,
-    min: 0,
+  bestValueStore: {
+    type: String,
+    trim: true,
   },
-  keyFeatures: {
-    type: [String],
-    default: [],
-  },
-  specifications: {
-    type: Map,
-    of: String,
-    default: {},
-  },
-  searchKeywords: {
+  features: {
     type: [String],
     default: [],
   },
@@ -144,9 +158,10 @@ const productSchema = new Schema<IProduct>({
 });
 
 // Indexes for search functionality
-productSchema.index({ name: 'text', searchKeywords: 'text' });
+productSchema.index({ title: 'text', brand: 'text', features: 'text' });
 productSchema.index({ 'platforms.name': 1 });
 productSchema.index({ lastScrapedAt: -1 });
 productSchema.index({ lastPriceChangeAt: -1 });
+productSchema.index({ bestValueStore: 1 });
 
 export const Product = mongoose.model<IProduct>('Product', productSchema); 

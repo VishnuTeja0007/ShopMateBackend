@@ -3,13 +3,11 @@ import {
   Product, 
   Wishlist, 
   Order, 
-  SearchHistory, 
   DailyDeals,
   type IUser,
   type IProduct,
   type IWishlist,
   type IOrder,
-  type ISearchHistory,
   type IDailyDeals
 } from "./models";
 import { 
@@ -17,7 +15,6 @@ import {
   InsertProduct, 
   InsertWishlist, 
   InsertOrder, 
-  InsertSearchHistory, 
   InsertDailyDeals 
 } from "@shared/schema";
 
@@ -48,10 +45,7 @@ export interface IStorage {
   deleteOrder(userId: string, orderId: string): Promise<boolean>;
   getOrderById(orderId: string): Promise<IOrder | undefined>;
 
-  // Search history operations
-  getSearchHistoryByUserId(userId: string): Promise<ISearchHistory[]>;
-  getSearchHistoryBySessionId(sessionId: string): Promise<ISearchHistory[]>;
-  createSearchHistory(searchHistory: InsertSearchHistory): Promise<ISearchHistory>;
+
 
   // Daily deals operations
   getDailyDeals(): Promise<IDailyDeals[]>;
@@ -248,38 +242,7 @@ export class MongoStorage implements IStorage {
     }
   }
 
-  // Search history operations
-  async getSearchHistoryByUserId(userId: string): Promise<ISearchHistory[]> {
-    try {
-      return await SearchHistory.find({ userId })
-        .sort({ timestamp: -1 })
-        .limit(50)
-        .exec();
-    } catch (error) {
-      console.error('Error getting search history by user:', error);
-      return [];
-    }
-  }
 
-  async getSearchHistoryBySessionId(sessionId: string): Promise<ISearchHistory[]> {
-    try {
-      return await SearchHistory.find({ sessionId })
-        .sort({ timestamp: -1 })
-        .limit(50)
-        .exec();
-    } catch (error) {
-      console.error('Error getting search history by session:', error);
-      return [];
-    }
-  }
-
-  async createSearchHistory(insertSearchHistory: InsertSearchHistory): Promise<ISearchHistory> {
-    const searchHistory = new SearchHistory({
-      ...insertSearchHistory,
-      timestamp: new Date(),
-    });
-    return await searchHistory.save();
-  }
 
   // Daily deals operations
   async getDailyDeals(): Promise<IDailyDeals[]> {

@@ -6,22 +6,19 @@ export class WishlistService {
   static async getWishlist(userId: string) {
     try {
       const wishlistItems = await storage.getWishlistByUserId(userId);
-      const productIds = wishlistItems.map(item => item.productId);
-      const products = await storage.getProductsByIds(productIds);
-
+      
+      // Since products are no longer stored in DB, we'll return basic wishlist info
       const wishlistWithProducts = wishlistItems.map(item => {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) return null;
-
         return {
           productId: item.productId,
-          name: product.name,
-          imageUrl: product.imageUrl,
-          currentLowestPrice: Math.min(...product.platforms.map(p => p.currentPrice)),
+          // Product details would need to be fetched from session or external API
+          title: "Product details not available (stored in session)",
+          imageUrl: "",
+          currentLowestPrice: 0,
           targetPrice: item.targetPrice,
-          platforms: product.platforms,
+          platforms: [],
         };
-      }).filter(Boolean);
+      });
 
       Logger.info(`Retrieved wishlist for user: ${userId}`);
       return wishlistWithProducts;
