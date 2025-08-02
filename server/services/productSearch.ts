@@ -47,31 +47,61 @@ export class ProductSearchService {
 
   static async getProductDetails(productId: string) {
     try {
+      // First, check if product exists in database
       const product = await storage.getProduct(productId);
-      if (!product) {
-        throw new Error("Product not found");
-      }
-
-      // Check if product data is recent
-      const hoursSinceLastScrape = (Date.now() - product.lastScrapedAt.getTime()) / (1000 * 60 * 60);
       
-      if (hoursSinceLastScrape > 24) {
-        // Refresh product data if it's older than 24 hours
-        Logger.info(`Refreshing product data for: ${product.name}`);
-        // In a real implementation, you would re-scrape the product here
-      }
+      if (product) {
+        // Product found in database - update price history with today's prices
+        Logger.info(`Product found in database: ${product.name}`);
+        
+        // Update price history for all platforms
+        const updatedPlatforms = product.platforms.map(platform => ({
+          ...platform,
+          priceHistory: [
+            ...platform.priceHistory,
+            {
+              date: new Date(),
+              price: platform.currentPrice,
+            }
+          ],
+          deliveryDate: platform.deliveryDate || null,
+          sellerRating: platform.sellerRating || null,
+        }));
 
-      return {
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        imageUrls: [product.imageUrl],
-        platforms: product.platforms,
-        priceHistory: product.platforms.length > 0 ? product.platforms[0].priceHistory : [],
-        overallRating: product.productStars,
-        reviewCount: product.reviewsCount,
-        lastPriceChangeAt: product.lastPriceChangeAt,
-      };
+        // Update the product in database
+        const updatedProduct = await storage.updateProduct(productId, {
+          platforms: updatedPlatforms,
+          lastPriceChangeAt: new Date(),
+        });
+
+        return {
+          id: updatedProduct.id,
+          name: updatedProduct.name,
+          description: updatedProduct.description,
+          imageUrl: updatedProduct.imageUrl,
+          brand: updatedProduct.brand,
+          productStars: updatedProduct.productStars,
+          platforms: updatedProduct.platforms,
+          lastPriceChangeAt: updatedProduct.lastPriceChangeAt,
+        };
+      } else {
+        // Product not found in database - fetch from SERP API
+        Logger.info(`Product not found in database, fetching from SERP API: ${productId}`);
+        
+        const serpResponse = await this.callGoogleProductApi(productId);
+        const newProduct = await this.processGoogleProductResult(serpResponse, productId);
+        
+        return {
+          id: newProduct.id,
+          name: newProduct.name,
+          description: newProduct.description,
+          imageUrl: newProduct.imageUrl,
+          brand: newProduct.brand,
+          productStars: newProduct.productStars,
+          platforms: newProduct.platforms,
+          lastPriceChangeAt: newProduct.lastPriceChangeAt,
+        };
+      }
     } catch (error) {
       Logger.error("Failed to get product details", error);
       throw error;
@@ -188,5 +218,58 @@ export class ProductSearchService {
     if (!priceString) return 0;
     const match = priceString.match(/[\d,]+/);
     return match ? parseInt(match[0].replace(/,/g, '')) : 0;
+  }
+
+  private static async callGoogleProductApi(productId: string) {
+    const params = {
+      engine: "google_product",
+      product_id: productId,
+      gl: "in",
+      api_key: SERP_API_KEY,
+    };
+
+    const response = await axios.get(SERP_API_URL, { params });
+    return response.data;
+  }
+
+  private static async processGoogleProductResult(serpData: any, productId: string): Promise<any> {
+    if (!serpData.product_results || serpData.product_results.length === 0) {
+      throw new Error("No product details found");
+    }
+
+    const productData = serpData.product_results[0];
+    
+    const product: InsertProduct = {
+      name: productData.title || "unavailable",
+      description: productData.description || null,
+      imageUrl: productData.thumbnail || "",
+      category: null,
+      brand: productData.brand || null,
+      productStars: productData.rating || null,
+      reviewsCount: productData.reviews || null,
+      keyFeatures: [],
+      specifications: {},
+      searchKeywords: [],
+      platforms: [{
+        name: productData.source || "Unknown",
+        logoUrl: "",
+        productUrl: productData.product_link || "",
+        currentPrice: this.extractPrice(productData.price) || 0,
+        discount: 0,
+        inclusivePrice: this.extractPrice(productData.price) || 0,
+        deliveryDate: null,
+        sellerRating: null,
+        priceHistory: [{
+          date: new Date(),
+          price: this.extractPrice(productData.price) || 0,
+        }],
+      }],
+      lastScrapedAt: new Date(),
+      lastPriceChangeAt: new Date(),
+    };
+
+    // Create new product in database
+    const newProduct = await storage.createProduct(product);
+    return newProduct;
   }
 }
